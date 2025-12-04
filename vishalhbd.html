@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match Found: Vroot Playz</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Valo & PUBG style fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600&family=Rajdhani:wght@700&family=Press+Start+2P&family=Staatliches&display=swap" rel="stylesheet">
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* VALORANT / PUBG Color Palette */
+        :root {
+            --valo-red: #ff4655;
+            --pubg-gold: #f2a900;
+            --dark-bg: #0f1923;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .pubg-font { font-family: 'Staatliches', cursive; letter-spacing: 2px; }
+        .valo-font { font-family: 'Teko', sans-serif; text-transform: uppercase; }
+
+        /* CRT Scanline Effect */
+        .scanlines {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50;
+        }
+
+        /* Glitch Effect on Hover */
+        .glitch-btn:hover {
+            animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+            background-color: var(--valo-red);
+            color: white;
+        }
+        @keyframes glitch-skew {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(-2deg); }
+            40% { transform: skew(2deg); }
+            60% { transform: skew(-1deg); }
+            80% { transform: skew(1deg); }
+            100% { transform: skew(0deg); }
+        }
+
+        /* Map Loading Bar */
+        .load-bar {
+            box-shadow: 0 0 10px var(--valo-red);
+        }
+
+        /* Photo Frames */
+        .photo-frame {
+            border: 2px solid var(--pubg-gold);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        .photo-frame:hover {
+            transform: scale(1.05);
+            border-color: var(--valo-red);
+            z-index: 10;
+        }
+
+        /* Text Shadow for Big Wish */
+        .huge-text-shadow {
+            text-shadow: 4px 4px 0px #000, -2px -2px 0px var(--valo-red);
+        }
+
+        /* Hide Scrollbar completely but keep scrolling functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col items-center justify-center relative bg-[url('https://wallpapers.com/images/hd/pubg-mobile-4k-3840-x-2160-b6f4g8m6k9j5j5j5.jpg')] bg-cover bg-center bg-no-repeat bg-blend-multiply bg-gray-900 overflow-hidden">
+
+    <div class="scanlines"></div>
+
+    <!-- PHASE 1: MATCHMAKING SCREEN -->
+    <div id="loading-screen" class="fixed inset-0 bg-[#0f1923] z-40 flex flex-col items-center justify-center p-4 text-center">
+        <h1 class="valo-font text-5xl md:text-6xl text-white mb-2 tracking-widest">MATCH FOUND</h1>
+        <p class="text-gray-400 font-mono text-sm mb-6" id="loading-text">>> CONNECTING TO SERVER...</p>
+        
+        <div class="w-48 md:w-64 h-2 bg-gray-700 rounded relative overflow-hidden">
+            <div id="progress-bar" class="absolute top-0 left-0 h-full bg-[#ff4655] w-0 transition-all duration-[4500ms] ease-out load-bar"></div>
+        </div>
+
+        <div class="mt-4 flex gap-4 text-xs text-gray-500 font-mono">
+            <span>MAP: BIRTHDAY_HAVEN</span>
+            <span>TARGET: VISHAL</span>
+        </div>
+        
+        <button id="access-btn" onclick="grantAccess()" class="hidden mt-10 px-6 py-3 md:px-8 md:py-4 bg-transparent border-2 border-[#f2a900] text-[#f2a900] font-bold hover:bg-[#f2a900] hover:text-black transition-all duration-200 pubg-font text-lg md:text-xl uppercase tracking-widest skew-x-[-10deg]">
+            ENTER LOBBY
+        </button>
+    </div>
+
+    <!-- PHASE 2: MAIN CONTENT -->
+    <main id="main-content" class="hidden w-full max-w-2xl p-4 flex-col items-center text-center z-10 h-full justify-start overflow-y-auto pb-24 no-scrollbar">
+        
+        <!-- Rank Badge -->
+        <div class="mb-4 animate-bounce mt-4 md:mt-8">
+            <span class="bg-[#ff4655] text-white px-3 py-1 font-bold text-xs uppercase tracking-widest skew-x-[-10deg] inline-block">
+                MVP DETECTED
+            </span>
+        </div>
+
+        <!-- The "Mission Card" -->
+        <div class="relative w-full bg-[#1c252e]/95 backdrop-blur border-l-4 border-[#ff4655] p-4 md:p-6 shadow-2xl skew-x-[-2deg] mb-10">
+            
+            <!-- Top Label -->
+            <div class="flex justify-between items-center mb-6 border-b border-gray-600 pb-2">
+                <h2 class="pubg-font text-2xl md:text-3xl text-[#f2a900]">MISSION OBJECTIVE</h2>
+                <span class="text-[10px] md:text-xs text-gray-400 font-mono">DATE: 05 DEC 2025</span>
+            </div>
+
+            <!-- BIG BIG HAPPY BIRTHDAY WISH (Replaces Stats) -->
+            <div class="text-center mb-8 md:mb-10 transform skew-x-[2deg]">
+                <h1 class="valo-font text-6xl md:text-8xl text-white leading-none tracking-tighter huge-text-shadow mb-1 md:mb-2">
+                    HAPPY
+                </h1>
+                <h1 class="valo-font text-6xl md:text-8xl text-[#f2a900] leading-none tracking-tighter huge-text-shadow mb-4 md:mb-6">
+                    BIRTHDAY
+                </h1>
+                <div class="inline-block border-2 border-white px-4 py-1 md:px-6 md:py-2">
+                    <h2 class="pubg-font text-3xl md:text-5xl text-white tracking-[0.2em] uppercase">
+                        VISHAL
+                    </h2>
+                </div>
+                <p class="text-gray-400 font-mono text-[10px] md:text-sm mt-4 tracking-widest uppercase">>> The Legend Behind Vroot Playz <<</p>
+            </div>
+
+            <!-- PHOTO GALLERY SECTION -->
+            <div class="mb-8">
+                <h3 class="text-left text-gray-400 text-xs font-mono mb-2">>> Some Memories</h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <!-- Photo 1: Replace src with actual image URL -->
+                    <div class="photo-frame aspect-square bg-gray-800">
+                        <img src="WhatsApp Image 2025-10-24 at 18.59.58_2b9c5abf.jpg" class="w-full h-full object-cover opacity-80 hover:opacity-100 transition">
+                    </div>
+                    <!-- Photo 2 -->
+                    <div class="photo-frame aspect-square bg-gray-800">
+                        <img src="WhatsApp Image 2025-12-04 at 23.40.39_afd88643.jpg" class="w-full h-full object-cover opacity-80 hover:opacity-100 transition">
+                    </div>
+                    <!-- Photo 3 -->
+                    <div class="photo-frame aspect-square bg-gray-800">
+                        <img src="2I4A7976.jpg" class="w-full h-full object-cover opacity-80 hover:opacity-100 transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden Message Area -->
+            <div id="secret-message" class="hidden mb-6 border-2 border-dashed border-[#f2a900] p-6 bg-yellow-900/20 text-left">
+                <h3 class="pubg-font text-3xl text-[#f2a900] mb-4 text-center tracking-widest">WINNER WINNER CHICKEN DINNER!</h3>
+                
+                <div class="space-y-4 text-gray-300 text-sm leading-relaxed font-sans mb-6 border-b border-gray-700 pb-6">
+                    <p class="font-bold text-white text-lg">
+                        Happy Birthday Vishal bhai! 🎉
+                    </p>
+                    <p>
+                        We fight like crazy, argue on every small thing, and <b>tu toh Etlo Ziddi Cho ke Kok Kok vaar Gusso avi jaye 😆🔥</b>.
+                    </p>
+                    <p>
+                        But sach bolu toh Joke Aside, life ma aaje pan je strongest bond che, ena Pachad reasons bhi aa badha moments j che. No matter how much we fight, at the end of the day you’re always there — and that’s what matters.
+                    </p>
+                    <p>
+                        May this year give you more peace, success, and clarity in life. Stay the same, just thodu less stubborn thy ja toh perfect 😜🤌. 
+                    </p>
+                    <p class="text-center font-bold text-[#f2a900] mt-4">
+                        Enjoy your day bhai, God bless always! 🎂✨❤️
+                    </p>
+                </div>
+
+                <!-- PATCH NOTES SECTION -->
+                <div class="bg-black/60 p-4 rounded border-l-2 border-green-500 font-mono text-xs shadow-inner">
+                    <p class="text-green-400 font-bold mb-3 tracking-wider">// SYSTEM UPDATE: LOG v20.25</p>
+                    <ul class="list-none space-y-2 text-gray-400">
+                        <li class="flex items-start"><span class="text-blue-400 mr-2">[BUFF]</span> <span>Age Stats Increased (+1 Level)</span></li>
+                        <li class="flex items-start"><span class="text-blue-400 mr-2">[BUFF]</span> <span>Wisdom & Reflexes Maxed Out</span></li>
+                        <li class="flex items-start"><span class="text-red-400 mr-2">[FIX]</span> <span>Fixed issue where he was too humble (Now 100% Legend)</span></li>
+                        <li class="flex items-start"><span class="text-yellow-400 mr-2">[NEW]</span> <span>"Vroot Playz" Dominance Multiplier Active</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Interaction Button -->
+            <button id="loot-btn" onclick="openLootBox()" class="w-full bg-[#ff4655] text-white font-bold py-4 px-6 shadow-lg glitch-btn valo-font text-2xl tracking-widest relative overflow-hidden group">
+                <span class="relative z-10">CLAIM BIRTHDAY DROP</span>
+                <div class="absolute inset-0 bg-white/20 transform -skew-x-12 translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+            </button>
+            
+            <!-- Youtube Link -->
+            <a href="https://www.youtube.com/@VrootPlayz" target="_blank" id="yt-link" class="hidden mt-4 block text-gray-400 hover:text-[#ff4655] text-xs font-mono transition-colors text-center border-t border-gray-700 pt-3">
+                [VISIT CHANNEL: VROOT PLAYZ]
+            </a>
+        </div>
+
+    </main>
+
+    <script>
+        // Simple WebAudio SoundManager (no external files required)
+        const Sound = (function() {
+            let ctx = null;
+            let masterGain = null;
+
+            function init() {
+                if (ctx) return;
+                ctx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGain = ctx.createGain();
+                masterGain.gain.value = 0.9;
+                masterGain.connect(ctx.destination);
+            }
+
+            function resume() {
+                if (!ctx) init();
+                if (ctx.state === 'suspended') return ctx.resume();
+                return Promise.resolve();
+            }
+
+            function playTone(freq, duration = 0.12, type = 'sine', vol = 0.15) {
+                if (!ctx) init();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = type;
+                o.frequency.value = freq;
+                g.gain.setValueAtTime(vol, ctx.currentTime + 0.001);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration + 0.01);
+                o.connect(g);
+                g.connect(masterGain);
+                o.start(ctx.currentTime + 0.001);
+                o.stop(ctx.currentTime + duration + 0.02);
+            }
+
+            return {
+                ensure: resume,
+                click() { playTone(880, 0.06, 'square', 0.18); },
+                tick() { playTone(660, 0.08, 'sine', 0.09); },
+                success() {
+                    playTone(1046.5, 0.12, 'sine', 0.18);
+                    setTimeout(() => playTone(1318.5, 0.12, 'sine', 0.14), 120);
+                },
+                fanfare() {
+                    playTone(523.25, 0.10, 'sawtooth', 0.12);
+                    setTimeout(() => playTone(659.25, 0.12, 'sawtooth', 0.12), 100);
+                    setTimeout(() => playTone(783.99, 0.16, 'sawtooth', 0.14), 220);
+                }
+            };
+        }());
+
+        // try to unlock audio on first user gesture (required by many browsers)
+        document.addEventListener('click', function unlockAudio() {
+            Sound.ensure().catch(() => {});
+            document.removeEventListener('click', unlockAudio);
+        }, { once: true });
+
+        window.onload = function() {
+            const progressBar = document.getElementById('progress-bar');
+            const loadingText = document.getElementById('loading-text');
+            const accessBtn = document.getElementById('access-btn');
+
+            setTimeout(() => { progressBar.style.width = '100%'; }, 100);
+
+            const texts = [
+                ">> CONNECTING TO LOBBY...",
+                ">> OPTIMIZING FPS...",
+                ">> DOWNLOADING CELEBRATION...",
+                ">> READY."
+            ];
+
+            let delay = 900;
+            texts.forEach((text, index) => {
+                setTimeout(() => {
+                    loadingText.innerText = text;
+                    // play a subtle tick for each loading step when audio is allowed
+                    try { Sound.tick(); } catch (e) { /* ignore */ }
+                }, delay * (index + 1));
+            });
+
+            setTimeout(() => {
+                accessBtn.classList.remove('hidden');
+            }, 4500);
+        };
+
+        function grantAccess() {
+            try { Sound.click(); } catch (e) { /* ignore */ }
+
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.style.opacity = '0';
+            loadingScreen.style.transition = 'opacity 0.4s ease-out';
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                const mainContent = document.getElementById('main-content');
+                mainContent.classList.remove('hidden');
+                mainContent.classList.add('flex');
+                
+                // Trigger initial confetti and fanfare
+                try { Sound.fanfare(); } catch (e) { /* ignore */ }
+                triggerConfetti();
+            }, 400);
+        }
+
+        function openLootBox() {
+            try { Sound.click(); } catch (e) { /* ignore */ }
+
+            const btn = document.getElementById('loot-btn');
+            const message = document.getElementById('secret-message');
+            const ytLink = document.getElementById('yt-link');
+            
+            btn.innerHTML = "WISH DELIVERED";
+            btn.classList.remove('bg-[#ff4655]', 'glitch-btn');
+            btn.classList.add('bg-gray-700', 'cursor-default', 'text-gray-400');
+            btn.onclick = null;
+
+            message.classList.remove('hidden');
+            message.classList.add('animate-pulse');
+            setTimeout(() => message.classList.remove('animate-pulse'), 1000);
+            
+            ytLink.classList.remove('hidden');
+
+            try { Sound.success(); Sound.fanfare(); } catch (e) { /* ignore */ }
+            triggerConfetti();
+        }
+
+        function triggerConfetti() {
+            var duration = 3 * 1000;
+            var end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#ff4655', '#f2a900', '#ffffff', '#22c55e'] 
+                });
+                confetti({
+                    particleCount: 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#ff4655', '#f2a900', '#ffffff', '#22c55e']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+    </script>
+</body>
+</html>
